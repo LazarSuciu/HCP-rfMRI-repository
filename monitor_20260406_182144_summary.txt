@@ -1,0 +1,15 @@
+=================================================================
+ monitor_run.sh — summary   2026-04-06 18:27:19
+=================================================================
+ Command    : bash Scripts/rsfMRI_Download_Normalization_Concatenation_Parcellation_HCPYA.sh
+ Exit code  : 0
+-----------------------------------------------------------------
+ Wall time  : 0h 5m 34s  (334s total)
+ Peak RSS   : 762.4 MB  (780664 kB, sum across process tree)
+ Peak CPU%  : 107%  (sum across process tree; >100% = multi-core)
+ Disk read  : 3.1 MB  (cumulative, /proc/pid/io)
+ Disk write : 5.06 GB  (cumulative, /proc/pid/io)
+-----------------------------------------------------------------
+ TSV log    : monitor_20260406_182144.tsv
+ Summary    : monitor_20260406_182144_summary.txt
+=================================================================

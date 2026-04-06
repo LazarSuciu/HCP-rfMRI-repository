@@ -1,0 +1,30 @@
+Right-Thalamus-Proper
+1 255 0 0 255
+Right-Caudate
+2 255 128 0 255
+Right-Putamen
+3 255 255 0 255
+Right-Pallidum
+4 0 200 0 255
+Right-Accumbens-area
+5 0 255 255 255
+Right-Hippocampus
+6 0 128 255 255
+Right-Amygdala
+7 0 0 255 255
+Left-Thalamus-Proper
+8 128 0 0 255
+Left-Caudate
+9 128 64 0 255
+Left-Putamen
+10 128 128 0 255
+Left-Pallidum
+11 0 100 0 255
+Left-Accumbens-area
+12 0 128 128 255
+Left-Hippocampus
+13 0 64 128 255
+Left-Amygdala
+14 0 0 128 255
+Brain-Stem
+15 128 128 128 255

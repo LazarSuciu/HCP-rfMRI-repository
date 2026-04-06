@@ -14,35 +14,42 @@
 
 ########## Defining variables - these need to be tweaked based on where your files are ##########
 
-export PATH=/mnt/software/workbench/bin_rh_linux64:${PATH} #this needs to point to path where wb_command is installed
+# export PATH=/opt/workbench/bin_linux64:${PATH} #this needs to point to path where wb_command is installed
 
-tempfolder="[TEMPFOLDER]" #this is the folder where the intermediate files will be stored
-outputpathhighest="[OUTPUTDIRECTORY]" #where you want to put the output, needs to exist
+tempfolder="/home/lazar-suciu/Documents/semester3/dipterv/diploma/data/HCP/rfMRI/temp" #this is the folder where the intermediate files will be stored
+outputpathhighest="/home/lazar-suciu/Documents/semester3/dipterv/diploma/data/HCP/rfMRI/outputs" #where you want to put the output, needs to exist
 
-subjectlist="[SUBJECTLIST].txt" #this needs to point to a txt file that contains the subject id's that you want to process/download, e.g. 100206. The file we used included all subjects with rfMRI scans 
+subjectlist="/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/SubjectLists/HCPYoungAdultSubjectListTestSingle.csv" #this needs to point to a txt file that contains the subject id's that you want to process/download, e.g. 100206. The file we used included all subjects with rfMRI scans 
 
 declare -A atlasdict #this includes all the atlases that you want to use for parcellation and will be looped over later. The key indicates the file path to the atlas (needs to refer to a .dlabel.nii atlas) and the value describes the custom name of the output directories/files (this can be selected by you)
-atlasdict=( ["[ATLASPATH]/Atlases/Schaefer/100regions7networks/Schaefer2018_100Parcels_7Networks_order_Tian_Subcortex_S1_3T.dlabel.nii"]="Schaefer2018_100Parcels_7Networks_Tian_Subcortex_S1_3T"
-["[ATLASPATH]/Atlases/Schaefer/1000regions7networks/Schaefer2018_1000Parcels_7Networks_order_Tian_Subcortex_S1_3T.dlabel.nii"]="Schaefer2018_1000Parcels_7Networks_Tian_Subcortex_S1_3T"
-["[ATLASPATH]/Atlases/Schaefer/400regions7networks/Schaefer2018_400Parcels_7Networks_order_Tian_Subcortex_S1.dlabel.nii"]="Schaefer2018_400Parcels_7Networks_Tian_Subcortex_S1_3T"
-["[ATLASPATH]/Atlases/Brainnetome/fsaverage.BN_Atlas.32k_fs_LR_246regions.dlabel.nii"]="fsaverage.BN_Atlas.32k_fs_LR_246regions"
-["[ATLASPATH]/Atlases/Gordon/Gordon333.32k_fs_LR_Tian_Subcortex_S1.dlabel.nii"]="Gordon333.32k_fs_LR_Tian_Subcortex_S1_3T"
-["[ATLASPATH]/Atlases/Glasser/Q1-Q6_RelatedValidation210.CorticalAreas_dil_Final_Final_Areas_Group_Colors_with_Atlas_ROIs2.32k_fs_LR.dlabel.nii"]="GlasserFreesurfer")
+atlasdict=( 
+# ["[ATLASPATH]/Atlases/Schaefer/100regions7networks/Schaefer2018_100Parcels_7Networks_order_Tian_Subcortex_S1_3T.dlabel.nii"]="Schaefer2018_100Parcels_7Networks_Tian_Subcortex_S1_3T"
+# ["[ATLASPATH]/Atlases/Schaefer/1000regions7networks/Schaefer2018_1000Parcels_7Networks_order_Tian_Subcortex_S1_3T.dlabel.nii"]="Schaefer2018_1000Parcels_7Networks_Tian_Subcortex_S1_3T"
+# ["[ATLASPATH]/Atlases/Schaefer/400regions7networks/Schaefer2018_400Parcels_7Networks_order_Tian_Subcortex_S1.dlabel.nii"]="Schaefer2018_400Parcels_7Networks_Tian_Subcortex_S1_3T"
+# ["/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Brainnetome/fsaverage.BN_Atlas.32k_fs_LR_246regions.dlabel.nii"]="fsaverage.BN_Atlas.32k_fs_LR_246regions"
+[/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Lausanne2018/cammoun2012_scale033.dlabel.nii]="Lausanne2018_cammoun2012_scale033"
+[/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Lausanne2018/cammoun2012_scale060.dlabel.nii]="Lausanne2018_cammoun2012_scale060"
+[/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Lausanne2018/cammoun2012_scale125.dlabel.nii]="Lausanne2018_cammoun2012_scale125"
+[/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Lausanne2018/cammoun2012_scale250.dlabel.nii]="Lausanne2018_cammoun2012_scale250"
+[/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Lausanne2018/cammoun2012_scale500.dlabel.nii]="Lausanne2018_cammoun2012_scale500"
+# ["[ATLASPATH]/Atlases/Gordon/Gordon333.32k_fs_LR_Tian_Subcortex_S1.dlabel.nii"]="Gordon333.32k_fs_LR_Tian_Subcortex_S1_3T"
+# ["[ATLASPATH]/Atlases/Glasser/Q1-Q6_RelatedValidation210.CorticalAreas_dil_Final_Final_Areas_Group_Colors_with_Atlas_ROIs2.32k_fs_LR.dlabel.nii"]="GlasserFreesurfer"
+)
 
-########## Looping over the subjects and the sessions ##########
+JOBS=5  # number of subjects to process in parallel
 
-now=$(date)
-echo $now
+########## Per-subject processing function ##########
 
-while read line # This loops over all the lines of the subjectlist file and executes the downloading, normalization, concatenation, and parcellation for each of these subjects separately
-do
-
-	SUBJECT=$line
+process_subject() {
+	local SUBJECT=$1
+	local logfile="${outputpathhighest}/logs/${SUBJECT}.log"
+	mkdir -p "${outputpathhighest}/logs"
+	exec > "$logfile" 2>&1  # redirect all output to per-subject log
 
 	echo "Now working on Subject ${SUBJECT}"
 	echo
 
-	for SESSION in "rfMRI_REST1" "rfMRI_REST2" # This makes sure to execute the same processing for both sessions (REST1 and REST2) separately
+	for SESSION in "rfMRI_REST1" "rfMRI_REST2"
 	do
 		echo "Now working on Session ${SESSION}"
 		echo
@@ -62,8 +69,7 @@ do
 
 		then
 
-			mkdir $outputpathhighest/${SUBJECT}
-			mkdir $outputpathhighest/${SUBJECT}/${SESSION}
+			mkdir -p $outputpathhighest/${SUBJECT}/${SESSION}
 			outputpathsession=$outputpathhighest/${SUBJECT}/${SESSION}
 
 			########## Preprocessing ###########
@@ -75,7 +81,7 @@ do
 			# https://www.humanconnectome.org/software/workbench-command/-cifti-math
 			# https://www.humanconnectome.org/software/workbench-command/-cifti-merge
 
-			for PED in "LR" "RL" # This makes sure to execute demeaning and variance normalization for both phase encoding directions separately
+			for PED in "LR" "RL"
 			do
 
 				echo "Demeaning and variance normalization of ${SESSION}_${PED}..."
@@ -94,21 +100,21 @@ do
 			echo "Done with demeaning, variance-normalization, and concatenation!"
 			echo
 
-			########## Preprocessing ###########
+			########## Parcellation ###########
 			echo "Now starting parcellation..."
 
 			for item in "${!atlasdict[@]}"
 			do
 				atlasname=${atlasdict[$item]}
 				atlaspath=$item
-				
+
 				# 1. Parcellating the concatenated time series for the specific atlas chosen
 				# https://www.humanconnectome.org/software/workbench-command/-cifti-parcellate
 				# See /Atlases for the different atlases that can be used
 
 				echo "Now parcellating time series using atlas $atlasname..."
 
-				mkdir $outputpathsession/${atlasname}
+				mkdir -p $outputpathsession/${atlasname}
 
 				wb_command -cifti-parcellate $outputpathsession/${SUBJECT}_${SESSION}_Atlas_MSMAll_hp2000_clean.dtseries.nii $atlaspath COLUMN $outputpathsession/${atlasname}/${SUBJECT}_${SESSION}_Atlas_MSMAll_hp2000_clean_${atlasname}_timeseries.ptseries.nii
 
@@ -116,20 +122,20 @@ do
 
 				# 2. Converting the parcellated time series to a .txt file
 				# https://www.humanconnectome.org/software/workbench-command/-cifti-convert
-				
+
 				echo "Now starting conversion of time series to .txt..."
 
 				wb_command -cifti-convert -to-text $outputpathsession/${atlasname}/${SUBJECT}_${SESSION}_Atlas_MSMAll_hp2000_clean_${atlasname}_timeseries.ptseries.nii $outputpathsession/${atlasname}/${SUBJECT}_${SESSION}_Atlas_MSMAll_hp2000_clean_${atlasname}_timeseries.txt
 
 				echo "Done with conversion to .txt!"
 				echo
-				
+
 				# 3. Creating the connectivity matrix using simple Pearson correlation
 				# https://www.humanconnectome.org/software/workbench-command/-cifti-correlate
 				# This is optional; for some applications you may only need the time series (e.g. if you want to create the connectivity matrices in a different way. In this case, comment out section 3 and 4
 
 				echo "Now creating connectivity matrix using Pearson correlation..."
-				
+
 				wb_command -cifti-correlation $outputpathsession/${atlasname}/${SUBJECT}_${SESSION}_Atlas_MSMAll_hp2000_clean_${atlasname}_timeseries.ptseries.nii $outputpathsession/${atlasname}/${SUBJECT}_${SESSION}_Atlas_MSMAll_hp2000_clean_${atlasname}_connmatrix.pconn.nii
 
 				echo "Done with parcellation for atlas $atlasname!"
@@ -147,9 +153,9 @@ do
 
 			echo "Done with parcellation"
 			echo
-			
-			rm $outputpathsession/$SUBJECT*
-			
+
+			rm -f ${outputpathsession}/${SUBJECT}*
+
 			echo "Done with Session $SESSION!"
 			echo
 
@@ -160,15 +166,52 @@ do
 
 	done
 
+	# Remove only this subject's temp files — not other subjects' in-flight files
+	rm -f "${tempfolder}/${SUBJECT}_"*
+
 	echo "Done with Subject $SUBJECT!"
-	echo
-	echo
+}
 
-	rm $tempfolder/*
+########## Looping over the subjects and the sessions ##########
 
-done < $subjectlist
+now=$(date)
+echo $now
+echo "Starting with JOBS=$JOBS parallel subjects"
+echo "Per-subject logs: ${outputpathhighest}/logs/"
+echo
 
+pids=()
+failed=()
+
+while read -r SUBJECT; do
+	# Wait until a slot is free
+	while (( ${#pids[@]} >= JOBS )); do
+		for i in "${!pids[@]}"; do
+			if ! kill -0 "${pids[$i]}" 2>/dev/null; then
+				wait "${pids[$i]}" || failed+=("${pids[$i]}")
+				unset 'pids[$i]'
+			fi
+		done
+		pids=("${pids[@]}")  # reindex
+		sleep 0.5
+	done
+
+	echo "[$(date +%H:%M:%S)] Launching ${SUBJECT}"
+	process_subject "$SUBJECT" &
+	pids+=($!)
+
+done < "$subjectlist"
+
+# Wait for remaining jobs
+for pid in "${pids[@]}"; do
+	wait "$pid" || failed+=("$pid")
+done
+
+echo
 echo "Processing done!"
+if (( ${#failed[@]} > 0 )); then
+	echo "WARNING: ${#failed[@]} subject(s) failed. Check logs in ${outputpathhighest}/logs/"
+fi
 
 then=$(date)
 echo $then
