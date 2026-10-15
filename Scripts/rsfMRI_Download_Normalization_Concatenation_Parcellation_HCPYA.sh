@@ -96,8 +96,8 @@ process_subject() {
 		file_relative_path_lr=MNINonLinear/Results/${SESSION}_LR/${SESSION}_LR_Atlas_MSMAll_hp2000_clean.dtseries.nii
 		file_relative_path_rl=MNINonLinear/Results/${SESSION}_RL/${SESSION}_RL_Atlas_MSMAll_hp2000_clean.dtseries.nii
 
-		aws s3 cp s3://hcp-openaccess/$s3prefix/$SUBJECT/$file_relative_path_lr $tempfolder/${SUBJECT}_${SESSION}_LR_Atlas_MSMAll_hp2000_clean.dtseries.nii --quiet
-		aws s3 cp s3://hcp-openaccess/$s3prefix/$SUBJECT/$file_relative_path_rl $tempfolder/${SUBJECT}_${SESSION}_RL_Atlas_MSMAll_hp2000_clean.dtseries.nii --quiet
+		aws s3 cp s3://hcp-openaccess/$s3prefix/$SUBJECT/$file_relative_path_lr $tempfolder/${SUBJECT}_${SESSION}_LR_Atlas_MSMAll_hp2000_clean.dtseries.nii --only-show-errors
+		aws s3 cp s3://hcp-openaccess/$s3prefix/$SUBJECT/$file_relative_path_rl $tempfolder/${SUBJECT}_${SESSION}_RL_Atlas_MSMAll_hp2000_clean.dtseries.nii --only-show-errors
 
 		if [ -f $tempfolder/${SUBJECT}_${SESSION}_LR_Atlas_MSMAll_hp2000_clean.dtseries.nii ] && \
 			[ -f $tempfolder/${SUBJECT}_${SESSION}_RL_Atlas_MSMAll_hp2000_clean.dtseries.nii ] # Script will only proceed if the session as well as both of the phase encoding directions have been properly downloaded from the server. If you also want to include subjects with only 1 phase encoding direction, you can edit this to make it more liberal (concatenation will not be necessary, demeaning and variance normalization can still be done)
