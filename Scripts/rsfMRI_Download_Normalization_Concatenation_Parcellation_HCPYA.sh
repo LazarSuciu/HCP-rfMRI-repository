@@ -23,6 +23,8 @@ atlasdir="${HCP_ATLAS_DIR:-${repodir}/Atlases}" #folder containing the atlases o
 tempfolder="${HCP_TEMP_DIR:?set HCP_TEMP_DIR}" #this is the folder where the intermediate files will be stored
 outputpathhighest="${HCP_OUTPUT_DIR:?set HCP_OUTPUT_DIR}" #where you want to put the output, needs to exist
 
+s3prefix="${HCP_S3_PREFIX:-HCP_1200}" #release folder in s3://hcp-openaccess: HCP_1200, or HCP_Retest for the retest sessions (subject IDs are the same, so use a separate HCP_OUTPUT_DIR)
+
 subjectlist="${HCP_SUBJECT_LIST:-${repodir}/SubjectLists/HCPYoungAdultSubjectList.txt}" #this needs to point to a txt file that contains the subject id's that you want to process/download, e.g. 100206. The file we used included all subjects with rfMRI scans
 
 declare -A atlasdict #this includes all the atlases that you want to use for parcellation and will be looped over later. The key indicates the file path to the atlas (needs to refer to a .dlabel.nii atlas) and the value describes the custom name of the output directories/files (this can be selected by you)
@@ -94,8 +96,8 @@ process_subject() {
 		file_relative_path_lr=MNINonLinear/Results/${SESSION}_LR/${SESSION}_LR_Atlas_MSMAll_hp2000_clean.dtseries.nii
 		file_relative_path_rl=MNINonLinear/Results/${SESSION}_RL/${SESSION}_RL_Atlas_MSMAll_hp2000_clean.dtseries.nii
 
-		aws s3 cp s3://hcp-openaccess/HCP_1200/$SUBJECT/$file_relative_path_lr $tempfolder/${SUBJECT}_${SESSION}_LR_Atlas_MSMAll_hp2000_clean.dtseries.nii --quiet
-		aws s3 cp s3://hcp-openaccess/HCP_1200/$SUBJECT/$file_relative_path_rl $tempfolder/${SUBJECT}_${SESSION}_RL_Atlas_MSMAll_hp2000_clean.dtseries.nii --quiet
+		aws s3 cp s3://hcp-openaccess/$s3prefix/$SUBJECT/$file_relative_path_lr $tempfolder/${SUBJECT}_${SESSION}_LR_Atlas_MSMAll_hp2000_clean.dtseries.nii --quiet
+		aws s3 cp s3://hcp-openaccess/$s3prefix/$SUBJECT/$file_relative_path_rl $tempfolder/${SUBJECT}_${SESSION}_RL_Atlas_MSMAll_hp2000_clean.dtseries.nii --quiet
 
 		if [ -f $tempfolder/${SUBJECT}_${SESSION}_LR_Atlas_MSMAll_hp2000_clean.dtseries.nii ] && \
 			[ -f $tempfolder/${SUBJECT}_${SESSION}_RL_Atlas_MSMAll_hp2000_clean.dtseries.nii ] # Script will only proceed if the session as well as both of the phase encoding directions have been properly downloaded from the server. If you also want to include subjects with only 1 phase encoding direction, you can edit this to make it more liberal (concatenation will not be necessary, demeaning and variance normalization can still be done)
