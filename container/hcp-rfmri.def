@@ -1,0 +1,64 @@
+Bootstrap: docker
+From: ubuntu:24.04
+
+# Build from the repository root (the %files paths are relative to it):
+#   apptainer build hcp-rfmri.sif container/hcp-rfmri.def
+# See container/README.md for how to run it.
+
+%labels
+    Description HCP-YA rfMRI download, normalization, concatenation and parcellation pipeline
+    WorkbenchVersion 2.1.0
+    AwsCliVersion 2.31.36
+
+%files
+    Scripts /opt/HCP-rfMRI-repository/Scripts
+    Atlases /opt/HCP-rfMRI-repository/Atlases
+    SubjectLists /opt/HCP-rfMRI-repository/SubjectLists
+
+%post
+    set -eu
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    # wb_command loads these system libraries even for command-line use
+    # (Qt, OSMesa and ftgl are bundled in /opt/workbench/libs_linux64)
+    apt-get install -y --no-install-recommends ca-certificates curl unzip procps \
+        libgl1 libglu1-mesa libgomp1 libglib2.0-0t64 libx11-6 libxext6
+    rm -rf /var/lib/apt/lists/*
+
+    cd /tmp
+    # Connectome Workbench 2.1.0 (same version used to produce the existing FC outputs)
+    curl -fsSL -o workbench.zip https://humanconnectome.org/storage/app/media/workbench/workbench-linux64-v2.1.0.zip
+    echo "4f9727d57e25a79f392aa02c2f4e25a744f78a06788a58e9059445c74fd13fb3  workbench.zip" | sha256sum -c -
+    unzip -q workbench.zip -d /opt
+    rm workbench.zip
+
+    # AWS CLI v2
+    curl -fsSL -o awscliv2.zip https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.31.36.zip
+    echo "810500e78651e338c9b64956cc841f0ef36aa1eb24b9d251a68318587c465755  awscliv2.zip" | sha256sum -c -
+    unzip -q awscliv2.zip
+    ./aws/install --install-dir /opt/aws-cli --bin-dir /usr/local/bin
+    rm -rf aws awscliv2.zip
+
+    chmod +x /opt/HCP-rfMRI-repository/Scripts/*.sh
+
+%environment
+    export PATH=/opt/workbench/bin_linux64:${PATH}
+    export LC_ALL=C.UTF-8
+
+%runscript
+    exec bash /opt/HCP-rfMRI-repository/Scripts/rsfMRI_Download_Normalization_Concatenation_Parcellation_HCPYA.sh "$@"
+
+%test
+    set -e
+    if LD_LIBRARY_PATH=/opt/workbench/libs_linux64 ldd /opt/workbench/exe_linux64/wb_command | grep "not found"; then
+        exit 1
+    fi
+    wb_command -version | grep -q "Version: 2.1.0"
+    aws --version
+    test -f /opt/HCP-rfMRI-repository/Atlases/Schaefer/300regions7networks/Schaefer2018_300Parcels_7Networks_order_Tian_Subcortex_S1_3T.dlabel.nii
+
+%help
+    Runs Scripts/rsfMRI_Download_Normalization_Concatenation_Parcellation_HCPYA.sh with the
+    atlases baked into the image. Required environment variables: HCP_TEMP_DIR, HCP_OUTPUT_DIR.
+    Optional: HCP_SUBJECT_LIST, HCP_ATLAS_DIR, JOBS. AWS credentials for the hcp-openaccess
+    bucket are read from ~/.aws (bound automatically with $HOME).

@@ -2,9 +2,10 @@ This folder contains the scripts used for processing the HCP data. There are 4 m
 <ol><h3>Atlas-related scripts:</h3>
     <li>COGparcelsGlasser.sh: This script was used to find the x,y,z-coordinates for the brain regions used in the Glasser Atlas (which were not provided by its creators). For more information, see /Atlases/Glasser/info/README.md</li>
     <li>bna_atlas_correct_numbering_vertices.m: This script was used to adapt the numbering of the regions of the Brainnetome atlas so that it could be used as a CIFTI file in combination with wb_command</li>
+    <li>build_schaefer_tian_annotation.py: This script was used to generate the annotation files of the 200- and 300-region Schaefer + Tian S1 atlases. For more information, see /Atlases/Schaefer/README.md</li>
  <h3>Processing-related scripts:</h3>
     <li>rsfMRI_Download_Normalization_Concatenation_Parcellation_HCPAging.sh: This is the script that is used to generate the time series for the subjects from the HCP-Aging database.</li>
-    <li>rsfMRI_Download_Normalization_Concatenation_Parcellation_HCPYA.sh: This is the script that is used to generate the time series for the subjects from the HCP-Young Adult database.</li>
+    <li>rsfMRI_Download_Normalization_Concatenation_Parcellation_HCPYA.sh: This is the script that is used to generate the time series for the subjects from the HCP-Young Adult database. Its paths are set with environment variables (HCP_TEMP_DIR and HCP_OUTPUT_DIR are required; HCP_SUBJECT_LIST, HCP_ATLAS_DIR and JOBS are optional). It can be run inside the container described in /container/README.md.</li>
 
 <br/>
 The above 2 scripts perform several processing steps while looping over a list of subjects and their associated resting-state scans. For an example of a subject list for those subjects with resting-state scans, refer to /SubjectLists/HCPAging_SubjectList.txt and /SubjectLists/HCPYA_SubjectList.txt. The script performs the following steps:

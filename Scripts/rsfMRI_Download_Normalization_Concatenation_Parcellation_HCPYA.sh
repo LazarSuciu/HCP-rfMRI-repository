@@ -14,29 +14,41 @@
 
 ########## Defining variables - these need to be tweaked based on where your files are ##########
 
-# export PATH=/opt/workbench/bin_linux64:${PATH} #this needs to point to path where wb_command is installed
+# export PATH=/opt/workbench/bin_linux64:${PATH} #this needs to point to path where wb_command is installed (not needed inside the container, see container/README.md)
 
-tempfolder="/home/lazar-suciu/Documents/semester3/dipterv/diploma/data/HCP/rfMRI/temp" #this is the folder where the intermediate files will be stored
-outputpathhighest="/home/lazar-suciu/Documents/semester3/dipterv/diploma/data/HCP/rfMRI/outputs" #where you want to put the output, needs to exist
+# The paths below can be set with environment variables (e.g. when running inside the container); the values after ":-" are the defaults
+repodir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+atlasdir="${HCP_ATLAS_DIR:-${repodir}/Atlases}" #folder containing the atlases of this repository
 
-subjectlist="/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/SubjectLists/HCPYoungAdultSubjectListTestSingle.csv" #this needs to point to a txt file that contains the subject id's that you want to process/download, e.g. 100206. The file we used included all subjects with rfMRI scans 
+tempfolder="${HCP_TEMP_DIR:?set HCP_TEMP_DIR}" #this is the folder where the intermediate files will be stored
+outputpathhighest="${HCP_OUTPUT_DIR:?set HCP_OUTPUT_DIR}" #where you want to put the output, needs to exist
+
+subjectlist="${HCP_SUBJECT_LIST:-${repodir}/SubjectLists/HCPYoungAdultSubjectList.txt}" #this needs to point to a txt file that contains the subject id's that you want to process/download, e.g. 100206. The file we used included all subjects with rfMRI scans
 
 declare -A atlasdict #this includes all the atlases that you want to use for parcellation and will be looped over later. The key indicates the file path to the atlas (needs to refer to a .dlabel.nii atlas) and the value describes the custom name of the output directories/files (this can be selected by you)
-atlasdict=( 
-# ["[ATLASPATH]/Atlases/Schaefer/100regions7networks/Schaefer2018_100Parcels_7Networks_order_Tian_Subcortex_S1_3T.dlabel.nii"]="Schaefer2018_100Parcels_7Networks_Tian_Subcortex_S1_3T"
-# ["[ATLASPATH]/Atlases/Schaefer/1000regions7networks/Schaefer2018_1000Parcels_7Networks_order_Tian_Subcortex_S1_3T.dlabel.nii"]="Schaefer2018_1000Parcels_7Networks_Tian_Subcortex_S1_3T"
-# ["[ATLASPATH]/Atlases/Schaefer/400regions7networks/Schaefer2018_400Parcels_7Networks_order_Tian_Subcortex_S1.dlabel.nii"]="Schaefer2018_400Parcels_7Networks_Tian_Subcortex_S1_3T"
-# ["/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Brainnetome/fsaverage.BN_Atlas.32k_fs_LR_246regions.dlabel.nii"]="fsaverage.BN_Atlas.32k_fs_LR_246regions"
-[/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Lausanne2018/cammoun2012_scale033.dlabel.nii]="Lausanne2018_cammoun2012_scale033"
-[/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Lausanne2018/cammoun2012_scale060.dlabel.nii]="Lausanne2018_cammoun2012_scale060"
-[/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Lausanne2018/cammoun2012_scale125.dlabel.nii]="Lausanne2018_cammoun2012_scale125"
-[/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Lausanne2018/cammoun2012_scale250.dlabel.nii]="Lausanne2018_cammoun2012_scale250"
-[/home/lazar-suciu/Documents/semester3/dipterv/diploma/repos/HCP-rfMRI-repository/Atlases/Lausanne2018/cammoun2012_scale500.dlabel.nii]="Lausanne2018_cammoun2012_scale500"
-# ["[ATLASPATH]/Atlases/Gordon/Gordon333.32k_fs_LR_Tian_Subcortex_S1.dlabel.nii"]="Gordon333.32k_fs_LR_Tian_Subcortex_S1_3T"
-# ["[ATLASPATH]/Atlases/Glasser/Q1-Q6_RelatedValidation210.CorticalAreas_dil_Final_Final_Areas_Group_Colors_with_Atlas_ROIs2.32k_fs_LR.dlabel.nii"]="GlasserFreesurfer"
+atlasdict=(
+# ["${atlasdir}/Schaefer/100regions7networks/Schaefer2018_100Parcels_7Networks_order_Tian_Subcortex_S1_3T.dlabel.nii"]="Schaefer2018_100Parcels_7Networks_Tian_Subcortex_S1_3T"
+["${atlasdir}/Schaefer/200regions7networks/Schaefer2018_200Parcels_7Networks_order_Tian_Subcortex_S1.dlabel.nii"]="Schaefer2018_200Parcels_7Networks_Tian_Subcortex_S1_3T"
+["${atlasdir}/Schaefer/300regions7networks/Schaefer2018_300Parcels_7Networks_order_Tian_Subcortex_S1_3T.dlabel.nii"]="Schaefer2018_300Parcels_7Networks_Tian_Subcortex_S1_3T"
+# ["${atlasdir}/Schaefer/400regions7networks/Schaefer2018_400Parcels_7Networks_order_Tian_Subcortex_S1.dlabel.nii"]="Schaefer2018_400Parcels_7Networks_Tian_Subcortex_S1_3T"
+# ["${atlasdir}/Schaefer/1000regions7networks/Schaefer2018_1000Parcels_7Networks_order_Tian_Subcortex_S1_3T.dlabel.nii"]="Schaefer2018_1000Parcels_7Networks_Tian_Subcortex_S1_3T"
+# ["${atlasdir}/Brainnetome/fsaverage.BN_Atlas.32k_fs_LR_246regions.dlabel.nii"]="fsaverage.BN_Atlas.32k_fs_LR_246regions"
+# ["${atlasdir}/Lausanne2018/cammoun2012_scale033.dlabel.nii"]="Lausanne2018_cammoun2012_scale033"
+# ["${atlasdir}/Lausanne2018/cammoun2012_scale060.dlabel.nii"]="Lausanne2018_cammoun2012_scale060"
+# ["${atlasdir}/Lausanne2018/cammoun2012_scale125.dlabel.nii"]="Lausanne2018_cammoun2012_scale125"
+# ["${atlasdir}/Lausanne2018/cammoun2012_scale250.dlabel.nii"]="Lausanne2018_cammoun2012_scale250"
+# ["${atlasdir}/Lausanne2018/cammoun2012_scale500.dlabel.nii"]="Lausanne2018_cammoun2012_scale500"
+# ["${atlasdir}/Gordon/Gordon333.32k_fs_LR_Tian_Subcortex_S1.dlabel.nii"]="Gordon333.32k_fs_LR_Tian_Subcortex_S1_3T"
+# ["${atlasdir}/Glasser/Q1-Q6_RelatedValidation210.CorticalAreas_dil_Final_Final_Areas_Group_Colors_with_Atlas_ROIs2.32k_fs_LR.dlabel.nii"]="GlasserFreesurfer"
 )
 
-JOBS=5  # number of subjects to process in parallel
+for item in "${!atlasdict[@]}"; do
+	[ -f "$item" ] || { echo "Atlas not found: $item" >&2; exit 1; }
+done
+[ -f "$subjectlist" ] || { echo "Subject list not found: $subjectlist" >&2; exit 1; }
+mkdir -p "$tempfolder" "$outputpathhighest"
+
+JOBS=${JOBS:-5}  # number of subjects to process in parallel
 
 ########## Per-subject processing function ##########
 
@@ -51,6 +63,27 @@ process_subject() {
 
 	for SESSION in "rfMRI_REST1" "rfMRI_REST2"
 	do
+		# --- Per-session existence check ---
+		atlas_count=${#atlasdict[@]}
+		if (( atlas_count == 0 )); then
+			echo "No atlases defined; will proceed with downloading and processing."
+		else
+			session_exists=true
+			for item in "${!atlasdict[@]}"; do
+				atlasname=${atlasdict[$item]}
+				expected="$outputpathhighest/${SUBJECT}/${SESSION}/${atlasname}/${SUBJECT}_${SESSION}_Atlas_MSMAll_hp2000_clean_${atlasname}_connmatrix.txt"
+				if [ ! -f "$expected" ]; then
+					session_exists=false
+					break
+				fi
+			done
+
+			if [ "$session_exists" = true ]; then
+				echo "All outputs already exist for ${SUBJECT} ${SESSION}; skipping session."
+				continue
+			fi
+		fi
+
 		echo "Now working on Session ${SESSION}"
 		echo
 		echo "Starting Download of scans from Connectome DB..."
